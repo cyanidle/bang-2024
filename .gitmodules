@@ -1,0 +1,3 @@
+[submodule "bang-src"]
+	path = bang-src
+	url = git@github.com:cyanidle/bang.git
