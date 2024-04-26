@@ -1,6 +1,13 @@
+#!/usr/bin/env python
+from threading import Thread
 from time import sleep
-from bang import Bang, MsgOdom, Odom, Position
+
+from bang import *
 from bang.gen import MsgConfigMotor, MsgConfigPinout
+
+def Task(func):
+    Thread(target=func, daemon=True).start()
+    return func
 
 P = 450
 I = 600
@@ -38,20 +45,27 @@ odom = Odom(motors)
 POS = Position(0, 0, 0)
 
 @bang.arduino.on(MsgOdom)
-def handle_odom(msg): 
+def handle_odom(msg):
     odom.handle(msg)
     if odom.hits >= 6:
         POS = odom.update()
 
-for pinout, params in zip(pinouts, motors):
+@bang.arduino.on(MsgEcho)
+def handle_echo(echo): print(f"<== {echo}")
+
+def move(x, y, z): bang.arduino.send(MsgMove(x, y, z))
+def stop(): move(0, 0, 0)
+
+def forward(x): move(x, 0, 0)
+def right(y): move(0, y, 0)
+def turn(z): move(0, 0, z)
+
+for params, pinout in zip(motors, pinouts):
+    sleep(0.3)
     bang.arduino.send(pinout)
+    sleep(0.3)
     bang.arduino.send(params)
 
-
-def step():
-    sleep(1)
-    print(POS)
-
-
 while True:
-    step()
+    sleep(0.5)
+    forward(1)
