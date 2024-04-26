@@ -34,7 +34,7 @@ pinouts = [
 bang = Bang(lidar_uri = None)
 odom = Odom(motors)
 
-@bang.arduino.onmessage(MsgOdom)
+@bang.arduino.on(MsgOdom)
 def handle_odom(msg): 
     odom.handle(msg)
 
