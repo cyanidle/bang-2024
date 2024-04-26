@@ -1,6 +1,8 @@
+from threading import Thread
 from time import sleep
-from bang import Bang, MsgOdom, Odom, Position
-from bang.gen import MsgConfigMotor, MsgConfigPinout
+from bang import Bang, MsgOdom, Odom
+from bang.gen import MsgConfigMotor, MsgConfigPinout, MsgMove
+from bang.odom import Position
 
 P = 450
 I = 600
@@ -16,7 +18,7 @@ def make_motor(num, angle):
         propCoeff=P,
         interCoeff=I,
         diffCoeff=D,
-        coeff=1,
+        coeff=1.,
         angleDegrees=angle
     )
 
@@ -35,23 +37,35 @@ pinouts = [
 bang = Bang(lidar_uri = None)
 odom = Odom(motors)
 
-POS = Position(0, 0, 0)
+@bang.lidar.onscan()
+def handle_scan(data):
+    pass
 
 @bang.arduino.on(MsgOdom)
 def handle_odom(msg): 
     odom.handle(msg)
-    if odom.hits >= 6:
-        POS = odom.update()
 
 for pinout, params in zip(pinouts, motors):
     bang.arduino.send(pinout)
     bang.arduino.send(params)
 
+def move(x, y, z):
+    bang.arduino.send(MsgMove(x, y, z))
 
-def step():
-    sleep(1)
-    print(POS)
+def stop(): move(0, 0, 0)
 
+current_pos = Position(0, 0, 0)
+def update_odom():
+    while True:
+        sleep(0.05)
+        current_pos = odom.update()
+        print(current_pos)
+odom_thread = Thread(target=update_odom, daemon=True)
 
-while True:
-    step()
+# while True:
+#     move(0, 0, 0.3)
+#     sleep(0.3)
+#     move(0, 0, -0.3)
+#     sleep(0.3)
+
+odom_thread.join()
